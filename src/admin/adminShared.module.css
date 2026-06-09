@@ -1,0 +1,415 @@
+.panelCard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 24px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 24px;
+}
+
+.sectionTitle {
+  font-size: 18px;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.subTabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.subTab {
+  padding: 10px 20px;
+  border: 1.5px solid var(--petal);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 500;
+  transition: all var(--transition-fast);
+}
+
+.subTab:hover { border-color: var(--blush); }
+
+.subTabActive {
+  background: var(--rose-deep);
+  border-color: var(--rose-deep);
+  color: white;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+@media (min-width: 640px) {
+  .formGrid { grid-template-columns: 1fr 1fr; }
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fieldFull { grid-column: 1 / -1; }
+
+.field label {
+  font-family: var(--font-accent);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.field input,
+.field textarea,
+.field select {
+  padding: 10px 12px;
+  background: var(--input-bg);
+  border: 1.5px solid var(--input-border);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  color: var(--chocolate);
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.field input:focus,
+.field textarea:focus,
+.field select:focus {
+  border-color: var(--blush);
+}
+
+.fieldError {
+  font-size: 12px;
+  color: var(--rose-deep);
+}
+
+.charCount {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-align: right;
+}
+
+.checkboxGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.checkboxLabel input { accent-color: var(--rose-deep); }
+
+.radioGroup {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.radioLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.colorSwatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.colorSwatch {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.colorSwatchActive {
+  border-color: var(--rose-deep);
+  box-shadow: 0 0 0 2px var(--petal);
+}
+
+.wrappingSwatch {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+}
+
+.wrappingSwatchActive {
+  border-color: var(--rose-deep);
+}
+
+.toggleRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+}
+
+.toggleRow input { display: none; }
+
+.toggleSlider {
+  width: 40px;
+  height: 22px;
+  background: var(--petal);
+  border-radius: 11px;
+  position: relative;
+  flex-shrink: 0;
+  transition: background var(--transition-fast);
+}
+
+.toggleSlider::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  background: var(--surface);
+  border-radius: 50%;
+  transition: transform var(--transition-fast);
+}
+
+.toggleRow input:checked + .toggleSlider {
+  background: var(--sage);
+}
+
+.toggleRow input:checked + .toggleSlider::after {
+  transform: translateX(18px);
+}
+
+.sizeTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.sizeTable th,
+.sizeTable td {
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--petal);
+  text-align: left;
+}
+
+.sizeTable input {
+  width: 100%;
+  min-width: 60px;
+  padding: 6px 8px;
+  border: 1.5px solid var(--petal);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+}
+
+.uploadBox {
+  border: 2px dashed var(--petal);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color var(--transition-fast);
+  position: relative;
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.uploadBox:hover { border-color: var(--blush); }
+
+.uploadBoxLarge { min-height: 200px; }
+
+.uploadPreview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  position: absolute;
+  inset: 0;
+}
+
+.removeImage {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--rose-deep);
+  color: white;
+  font-size: 16px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.uploadRow {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+@media (min-width: 640px) {
+  .uploadRow { grid-template-columns: repeat(4, 1fr); }
+}
+
+.formActions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+  flex-wrap: wrap;
+}
+
+.searchBar {
+  width: 100%;
+  max-width: 360px;
+  padding: 10px 14px;
+  border: 1.5px solid var(--petal);
+  border-radius: var(--radius-sm);
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+.thumbCell {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, var(--petal), var(--blush));
+  overflow: hidden;
+}
+
+.thumbCell img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.actionGroup {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.iconBtn {
+  padding: 6px 10px;
+  border: 1.5px solid var(--petal);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  transition: all var(--transition-fast);
+}
+
+.iconBtn:hover {
+  border-color: var(--blush);
+  background: var(--petal);
+}
+
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 16px;
+}
+
+.modal {
+  background: var(--surface);
+  padding: 28px;
+  border-radius: var(--radius-lg);
+  max-width: 420px;
+  width: 100%;
+  box-shadow: var(--shadow-lg);
+}
+
+.modal h3 {
+  font-size: 20px;
+  margin-bottom: 12px;
+}
+
+.modal p {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 20px;
+}
+
+.modalActions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.deleteBtn {
+  padding: 10px 20px;
+  background: var(--rose-deep);
+  color: white;
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+}
+
+.filterBar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.filterChip {
+  padding: 8px 14px;
+  border: 1.5px solid var(--petal);
+  border-radius: 20px;
+  font-size: 13px;
+  transition: all var(--transition-fast);
+}
+
+.filterChipActive {
+  background: var(--rose-deep);
+  border-color: var(--rose-deep);
+  color: white;
+}
+
+.alertBanner {
+  padding: 14px 18px;
+  background: rgba(201, 168, 76, 0.15);
+  border-left: 4px solid var(--gold);
+  border-radius: var(--radius-sm);
+  margin-bottom: 20px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.alertBanner:hover {
+  background: rgba(201, 168, 76, 0.25);
+}
+
+.alertBannerUrgent {
+  background: rgba(194, 24, 91, 0.1);
+  border-left-color: var(--rose-deep);
+}
+
+.spinner {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}

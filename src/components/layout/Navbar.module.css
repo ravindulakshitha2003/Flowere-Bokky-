@@ -1,0 +1,248 @@
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  padding: 16px 0;
+  transition: all var(--transition-base);
+  background: transparent;
+}
+
+.scrolled {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  background: var(--nav-scrolled-bg);
+  box-shadow: var(--shadow-sm);
+  padding: 12px 0;
+}
+
+.inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.logo {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--chocolate);
+  white-space: nowrap;
+  transition: color var(--transition-fast);
+}
+
+.logo:hover { color: var(--rose-deep); }
+
+.nav {
+  display: none;
+  align-items: center;
+  gap: 32px;
+}
+
+@media (min-width: 768px) {
+  .nav { display: flex; }
+}
+
+.navLink {
+  font-family: var(--font-accent);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  color: var(--chocolate);
+  position: relative;
+  transition: color var(--transition-fast);
+}
+
+.navLink::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: var(--rose-deep);
+  transition: width var(--transition-base);
+}
+
+.navLink:hover::after,
+.active::after {
+  width: 100%;
+}
+
+.navLink:hover,
+.active {
+  color: var(--rose-deep);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.iconBtn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  color: var(--chocolate);
+  transition: all var(--transition-fast);
+}
+
+.iconBtn:hover {
+  background: rgba(242, 167, 187, 0.2);
+  color: var(--rose-deep);
+}
+
+.badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  background: var(--rose-deep);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loginBtn {
+  display: none;
+  padding: 8px 20px;
+  background: var(--rose-deep);
+  color: white;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 500;
+  transition: all var(--transition-base);
+}
+
+.loginBtn:hover {
+  background: #a01449;
+  transform: translateY(-1px);
+}
+
+@media (min-width: 768px) {
+  .loginBtn { display: inline-flex; }
+}
+
+.avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--blush), var(--rose-deep));
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform var(--transition-fast);
+}
+
+.avatar:hover { transform: scale(1.05); }
+
+.dropdown {
+  position: relative;
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .dropdown { display: block; }
+}
+
+.dropdownMenu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 180px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  padding: 8px;
+  animation: fadeInUp 0.2s ease;
+}
+
+.dropdownMenu a,
+.dropdownMenu button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  color: var(--chocolate);
+  transition: background var(--transition-fast);
+}
+
+.dropdownMenu a:hover,
+.dropdownMenu button:hover {
+  background: var(--petal);
+}
+
+.hamburger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  color: var(--chocolate);
+}
+
+@media (min-width: 768px) {
+  .hamburger { display: none; }
+}
+
+.mobileMenu {
+  position: fixed;
+  top: 0;
+  right: -100%;
+  width: 280px;
+  height: 100vh;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  box-shadow: var(--shadow-lg);
+  padding: 80px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: right var(--transition-base);
+  z-index: 999;
+}
+
+.mobileOpen {
+  right: 0;
+}
+
+.mobileLink {
+  padding: 14px 16px;
+  font-family: var(--font-display);
+  font-size: 20px;
+  color: var(--chocolate);
+  border-radius: var(--radius-sm);
+  transition: background var(--transition-fast);
+}
+
+.mobileLink:hover {
+  background: var(--petal);
+}
+
+.mobileLogin {
+  margin-top: 16px;
+  padding: 12px;
+  text-align: center;
+  background: var(--rose-deep);
+  color: white;
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+}

@@ -1,0 +1,423 @@
+.checkout {
+  padding: 32px 0 64px;
+}
+
+.title {
+  font-size: 36px;
+  margin-bottom: 32px;
+  text-align: center;
+}
+
+.steps {
+  display: flex;
+  justify-content: center;
+  gap: 0;
+  margin-bottom: 48px;
+}
+
+.stepItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--text-muted);
+  position: relative;
+}
+
+.stepNum {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid var(--petal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 13px;
+  transition: all var(--transition-base);
+}
+
+.stepActive .stepNum {
+  border-color: var(--rose-deep);
+  background: var(--rose-deep);
+  color: white;
+}
+
+.stepDone .stepNum {
+  border-color: var(--sage);
+  background: var(--sage);
+  color: white;
+}
+
+.stepActive { color: var(--chocolate); font-weight: 500; }
+
+.stepLine {
+  width: 40px;
+  height: 2px;
+  background: var(--petal);
+  margin: 0 8px;
+}
+
+@media (min-width: 640px) {
+  .stepLine { width: 80px; }
+}
+
+.stepContent {
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.stepContent h2 {
+  font-size: 24px;
+  margin-bottom: 24px;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+@media (min-width: 640px) {
+  .formGrid { grid-template-columns: 1fr 1fr; }
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fullWidth { grid-column: 1 / -1; }
+
+.field label {
+  font-family: var(--font-accent);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.field input,
+.field textarea {
+  padding: 12px 16px;
+  border: 2px solid var(--petal);
+  border-radius: var(--radius-sm);
+  font-size: 15px;
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.field input:focus,
+.field textarea:focus {
+  border-color: var(--blush);
+}
+
+.mapPlaceholder {
+  margin-bottom: 24px;
+  position: relative;
+}
+
+.mapLabel {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 8px;
+  text-align: center;
+}
+
+.pinBtn {
+  display: block;
+  margin: 12px auto 0;
+  padding: 8px 20px;
+  background: var(--sage);
+  color: white;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  transition: background var(--transition-fast);
+}
+
+.pinBtn:hover { background: #6a8d6e; }
+
+.zoneLabel {
+  padding: 10px 16px;
+  background: rgba(122, 158, 126, 0.15);
+  color: var(--sage);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 24px;
+}
+
+.slots { margin-bottom: 24px; }
+
+.slots h3 {
+  font-size: 16px;
+  margin-bottom: 12px;
+}
+
+.slotGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.slotCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 16px 8px;
+  border: 2px solid var(--petal);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  transition: all var(--transition-fast);
+}
+
+.slotCard:hover { border-color: var(--blush); }
+
+.slotActive {
+  border-color: var(--rose-deep);
+  background: rgba(194, 24, 91, 0.06);
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.toggle input { display: none; }
+
+.toggleSlider {
+  width: 40px;
+  height: 22px;
+  background: var(--petal);
+  border-radius: 11px;
+  position: relative;
+  transition: background var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.toggleSlider::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  background: var(--surface);
+  border-radius: 50%;
+  transition: transform var(--transition-fast);
+}
+
+.toggle input:checked + .toggleSlider {
+  background: var(--sage);
+}
+
+.toggle input:checked + .toggleSlider::after {
+  transform: translateX(18px);
+}
+
+.paymentCards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.paymentCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 24px 16px;
+  border: 2px solid var(--petal);
+  border-radius: var(--radius-lg);
+  text-align: center;
+  transition: all var(--transition-base);
+}
+
+.paymentCard:hover { border-color: var(--blush); }
+
+.paymentActive {
+  border-color: var(--rose-deep);
+  background: rgba(194, 24, 91, 0.04);
+  box-shadow: var(--shadow-md);
+}
+
+.paymentIcon { font-size: 32px; }
+
+.paymentCard strong { font-size: 16px; }
+.paymentCard span:last-child { font-size: 12px; color: var(--text-muted); }
+
+.cardForm {
+  padding: 24px;
+  background: var(--champagne);
+  border-radius: var(--radius-md);
+  margin-bottom: 24px;
+}
+
+.sslBadge {
+  font-size: 13px;
+  color: var(--sage);
+  margin-top: 12px;
+  text-align: center;
+}
+
+.codNote {
+  padding: 20px;
+  background: var(--champagne);
+  border-radius: var(--radius-md);
+  margin-bottom: 24px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.codConfirm {
+  margin-top: 8px;
+  color: var(--sage);
+  font-weight: 500;
+}
+
+.orderPreview {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.orderPreview h3 {
+  font-family: var(--font-display);
+  font-size: 24px;
+  color: var(--rose-deep);
+}
+
+.placeOrder {
+  width: 100%;
+  padding: 16px;
+  font-size: 16px;
+}
+
+.confirmation {
+  text-align: center;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.successIcon {
+  margin-bottom: 24px;
+}
+
+.checkmark {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto;
+}
+
+.checkCircle {
+  stroke: var(--sage);
+  stroke-width: 2;
+  animation: successCircle 0.5s ease forwards;
+}
+
+.checkPath {
+  stroke: var(--sage);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 100;
+  animation: checkmarkDraw 0.6s ease 0.3s forwards;
+}
+
+.confirmation h2 {
+  font-size: 32px;
+  margin-bottom: 16px;
+}
+
+.orderIdLabel {
+  font-size: 13px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.orderId {
+  font-family: var(--font-display);
+  font-size: 36px;
+  font-weight: 600;
+  color: var(--rose-deep);
+  margin-bottom: 32px;
+}
+
+.confirmSummary {
+  text-align: left;
+  padding: 24px;
+  background: var(--champagne);
+  border-radius: var(--radius-lg);
+  margin-bottom: 24px;
+}
+
+.confirmSummary h3 {
+  font-size: 20px;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.summaryGrid {
+  display: grid;
+  gap: 12px;
+}
+
+.summaryGrid div {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+}
+
+.summaryGrid span { color: var(--text-muted); }
+
+.totalRow {
+  border-top: 1px solid var(--petal);
+  padding-top: 12px !important;
+  font-size: 16px !important;
+}
+
+.totalRow strong { color: var(--rose-deep); font-size: 20px; }
+
+.trackingLink {
+  font-size: 14px;
+  margin-bottom: 24px;
+}
+
+.trackingLink a {
+  color: var(--rose-deep);
+  font-weight: 500;
+}
+
+.confirmActions {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.confirmItems {
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--petal);
+}
+
+.confirmItem {
+  font-size: 14px;
+  padding: 4px 0;
+  color: var(--text-secondary);
+}
+
+.empty {
+  text-align: center;
+  padding: 80px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}

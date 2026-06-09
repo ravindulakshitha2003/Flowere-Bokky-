@@ -41,7 +41,7 @@ export default function Navbar() {
   }
 
   return (
-    <header className={`${styles.header} ${scrolled ? styles.scrolled : ''}`}>
+    <header className={`${styles.header} ${scrolled ? styles.scrolled : ''} ${menuOpen ? styles.menuOpen : ''}`}>
       <div className={`container ${styles.inner}`}>
         <Link to="/" className={styles.logo}>
           Bloom & Bliss
@@ -113,21 +113,54 @@ export default function Navbar() {
         </div>
       </div>
 
+      {menuOpen && (
+        <button
+          type="button"
+          className={styles.mobileBackdrop}
+          onClick={() => setMenuOpen(false)}
+          aria-label="Close menu"
+        />
+      )}
+
       <div className={`${styles.mobileMenu} ${menuOpen ? styles.mobileOpen : ''}`}>
+        <button
+          type="button"
+          className={styles.mobileClose}
+          onClick={() => setMenuOpen(false)}
+          aria-label="Close menu"
+        >
+          <X size={22} />
+        </button>
         {navLinks.map((link) => (
           <NavLink
             key={link.to}
             to={link.to}
-            className={styles.mobileLink}
+            className={({ isActive }) =>
+              `${styles.mobileLink} ${isActive ? styles.mobileLinkActive : ''}`
+            }
             onClick={() => setMenuOpen(false)}
           >
             {link.label}
           </NavLink>
         ))}
-        {!isLoggedIn && (
+        {!isLoggedIn ? (
           <Link to="/login" className={styles.mobileLogin} onClick={() => setMenuOpen(false)}>
             Login
           </Link>
+        ) : (
+          <>
+            <Link to="/account" className={styles.mobileLink} onClick={() => setMenuOpen(false)}>
+              My Account
+            </Link>
+            {isAdmin && (
+              <Link to="/admin" className={styles.mobileLink} onClick={() => setMenuOpen(false)}>
+                Admin Panel
+              </Link>
+            )}
+            <button type="button" className={styles.mobileLogout} onClick={() => { setMenuOpen(false); handleLogout() }}>
+              Logout
+            </button>
+          </>
         )}
       </div>
     </header>

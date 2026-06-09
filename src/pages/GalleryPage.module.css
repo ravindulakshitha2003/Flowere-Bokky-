@@ -3,7 +3,7 @@
 }
 
 .title {
-  font-size: 36px;
+  font-size: clamp(28px, 6vw, 36px);
   text-align: center;
   margin-bottom: 8px;
 }

@@ -59,7 +59,7 @@
 .breadcrumb a:hover { color: var(--rose-deep); }
 
 .title {
-  font-size: 32px;
+  font-size: clamp(24px, 5vw, 32px);
   margin-bottom: 12px;
 }
 
@@ -94,6 +94,12 @@
   grid-template-columns: repeat(3, 1fr);
   gap: 12px;
   margin-bottom: 24px;
+}
+
+@media (max-width: 400px) {
+  .sizeSelector {
+    grid-template-columns: 1fr;
+  }
 }
 
 .sizeCard {

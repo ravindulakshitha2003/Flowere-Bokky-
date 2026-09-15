@@ -71,7 +71,7 @@ export default function ProductCard({ product, showSizeSelector = false }) {
   }
 
   return (
-    <Link to={`/product/${product.id}`} className={styles.card}>
+    <Link to={`/product/bb-004`} className={styles.card}>
       <div className={styles.imageWrap}>
         <div
           className={styles.image}

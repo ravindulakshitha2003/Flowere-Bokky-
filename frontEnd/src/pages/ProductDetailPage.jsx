@@ -417,9 +417,13 @@ export default function ProductDetailPage() {
 
             {activeTab === 'faq' && (
               <div className={styles.faqTab}>
-                {product.faq.map((item, i) => (
-                  <FaqItem key={i} question={item.q} answer={item.a} />
-                ))}
+                {product.faq?.length > 0 ? (
+                  product.faq.map((item, i) => (
+                    <FaqItem key={i} question={item.q} answer={item.a} />
+                  ))
+                ) : (
+                  <p className={styles.description}>No FAQs available for this bouquet yet.</p>
+                )}
               </div>
             )}
           </div>

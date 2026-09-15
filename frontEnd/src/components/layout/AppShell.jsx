@@ -3,10 +3,10 @@ import { useFestival } from '../../context/FestivalContext'
 import FestivalParticles from '../ui/FestivalParticles'
 import Layout from './Layout'
 import ProtectedRoute from '../auth/ProtectedRoute'
-// import HomePage from '../../pages/HomePage'
+import HomePage from '../../pages/HomePage'
 import ShopPage from '../../pages/ShopPage'
-// import ProductDetailPage from '../../pages/ProductDetailPage'
-// import GalleryPage from '../../pages/GalleryPage'
+import ProductDetailPage from '../../pages/ProductDetailPage.jsx'
+import GalleryPage from '../../pages/GalleryPage'
 // import CartPage from '../../pages/CartPage'
 // import WishlistPage from '../../pages/WishlistPage'
 // import CheckoutPage from '../../pages/CheckoutPage'
@@ -36,10 +36,14 @@ export default function AppShell() {
           /> */}
           <Route element={<Layout />}>
            <Route path="shop" element={<ShopPage />} />
-            {/* <Route index element={<HomePage />} />
-           
             <Route path="product/:id" element={<ProductDetailPage />} />
             <Route path="gallery" element={<GalleryPage />} />
+             <Route index element={<HomePage />} />
+          
+            {/* 
+           
+           
+            
             <Route path="cart" element={<CartPage />} />
             <Route path="wishlist" element={<WishlistPage />} />
             <Route

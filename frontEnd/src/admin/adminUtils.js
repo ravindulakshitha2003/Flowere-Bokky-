@@ -1,4 +1,4 @@
-import { products } from '../data/products'
+
 
 export function normalizeProductForAdmin(product) {
   const quality = product.quality || ''

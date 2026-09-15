@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
-import { useStore } from '../context/StoreContext'
+
 import { formatPrice, generateOrderId, getMinDeliveryDate } from '../utils/helpers'
 import styles from './CheckoutPage.module.css'
 

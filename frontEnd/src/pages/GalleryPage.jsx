@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { X, ChevronLeft, ChevronRight } from 'lucide-react'
-import { useStore } from '../context/StoreContext'
 import styles from './GalleryPage.module.css'
 
 const TABS = ['Our Work', 'Our Brand']

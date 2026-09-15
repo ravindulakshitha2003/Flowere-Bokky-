@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { Loader2 } from 'lucide-react'
-import { readFileAsBase64 } from './adminUtils'
+// import { readFileAsBase64 } from './adminUtils'
 import { MOCK_CUSTOMER_PHOTOS } from './adminConstants'
-import { useStore } from '../context/StoreContext'
+
 import { useToast } from '../context/ToastContext'
 import ConfirmModal from './ConfirmModal'
 import styles from './adminShared.module.css'

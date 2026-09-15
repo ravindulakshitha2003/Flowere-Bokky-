@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { Star, Heart, ChevronDown, ChevronUp } from 'lucide-react'
 import { addons, getDiscountedPrice } from '../data/products'
-import { useStore } from '../context/StoreContext'
+
 import { getReviewsByProduct } from '../data/reviews'
 import { useCart } from '../context/CartContext'
 import { useWishlist } from '../context/WishlistContext'
@@ -35,17 +35,18 @@ const WRAPPING_COLORS = {
 
 export default function ProductDetailPage() {
   const { id } = useParams()
-  const { products } = useStore()
-  const product = products.find((p) => p.id === id)
+
   const navigate = useNavigate()
   const { addItem } = useCart()
   const { toggle, isWishlisted } = useWishlist()
   const { isLoggedIn } = useAuth()
   const { showToast } = useToast()
+  // Related products are now fetched directly in this component (no shared store)
+  const [allProducts, setAllProducts] = useState([])
 
   const [selectedSize, setSelectedSize] = useState('M')
   const [activeImage, setActiveImage] = useState(0)
-  const [wrapping, setWrapping] = useState(product?.wrappingOptions[0] || '')
+  const [wrapping, setWrapping] = useState('')
   const [surpriseMe, setSurpriseMe] = useState(false)
   const [selectedAddons, setSelectedAddons] = useState([])
   const [giftMessage, setGiftMessage] = useState('')
@@ -55,7 +56,55 @@ export default function ProductDetailPage() {
   const [reviewRating, setReviewRating] = useState(5)
   const [reviewText, setReviewText] = useState('')
 
+  const [isLoaded, setIsLoaded] = useState(false)
+  const [product, setProduct] = useState(null)
+
+  // CHANGE 3: added `id` to the dependency array and reset isLoaded/product when it
+  // changes, so navigating from one product page to another (e.g. via "related")
+  // actually re-fetches instead of showing the previous product forever.
+  useEffect(() => {
+    setIsLoaded(false)
+    setProduct(null)
+
+    async function fetchProduct() {
+      try {
+        const res = await fetch(`http://localhost:3000/api/products/${id}`)
+        if (!res.ok) throw new Error(`Failed to fetch product: ${res.status}`)
+        const data = await res.json()
+        setProduct(data.product)
+        setWrapping(data.product.wrappingOptions?.[0] || '')
+      } catch (err) {
+        console.log(err.message)
+      } finally {
+        setIsLoaded(true)
+      }
+    }
+
+    fetchProduct()
+  }, [id])
+
+  // Fetch the full products list once, for the "You May Also Love" section.
+  // This is a second, separate request from the single-product fetch above.
+  useEffect(() => {
+    async function fetchAllProducts() {
+      try {
+        const res = await fetch('http://localhost:3000/api/products')
+        if (!res.ok) throw new Error(`Failed to fetch products: ${res.status}`)
+        const data = await res.json()
+        setAllProducts(Array.isArray(data.allproduct) ? data.allproduct : [])
+      } catch (err) {
+        console.log(err.message)
+      }
+    }
+    fetchAllProducts()
+  }, [])
+
+  // CHANGE 4: show a loading state while fetching, and only show "not found"
+  // once the fetch has actually finished and there's still no product.
   if (!product) {
+    if (!isLoaded) {
+      return <div className={styles.notFound}><h2>Loading…</h2></div>
+    }
     return (
       <div className={styles.notFound}>
         <h2>Bouquet not found</h2>
@@ -72,7 +121,10 @@ export default function ProductDetailPage() {
   const subtotal = basePrice + product.packingCost + addonsTotal
   const outOfStock = sizeData.stock === 0
   const productReviews = getReviewsByProduct(product.id)
-  const related = products.filter((p) => p.id !== product.id && p.isActive !== false).slice(0, 4)
+  // `allProducts` now comes from the direct fetch above, not a shared store
+  const related = allProducts
+    .filter((p) => p.id !== product.id && p.isActive !== false)
+    .slice(0, 4)
 
   const toggleAddon = (addon) => {
     setSelectedAddons((prev) => {

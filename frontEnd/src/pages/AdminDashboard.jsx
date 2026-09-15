@@ -8,7 +8,7 @@ import {
 } from 'recharts'
 import { mockOrders } from '../data/orders'
 import { useAuth } from '../context/AuthContext'
-import { useStore } from '../context/StoreContext'
+
 import ProductsPanel from '../admin/ProductsPanel'
 import InventoryPanel from '../admin/InventoryPanel'
 import GalleryPanel from '../admin/GalleryPanel'
@@ -142,7 +142,7 @@ export default function AdminDashboard() {
   const [showResetConfirm, setShowResetConfirm] = useState(false)
   const [giftPopover, setGiftPopover] = useState(null)
   const [detailOrder, setDetailOrder] = useState(null)
-  const { products } = useStore()
+  
   const [offers, setOffers] = useState(
     () => products.filter((p) => p.isOffer).map((p) => ({
       id: p.id,

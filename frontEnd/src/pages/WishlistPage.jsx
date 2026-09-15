@@ -1,12 +1,12 @@
 import { Link } from 'react-router-dom'
 import { useWishlist } from '../context/WishlistContext'
-import { useStore } from '../context/StoreContext'
+
 import ProductCard from '../components/ui/ProductCard'
 import styles from './WishlistPage.module.css'
 
 export default function WishlistPage() {
   const { items } = useWishlist()
-  const { products } = useStore()
+  
 
   const wishlistProducts = items
     .map((item) => products.find((p) => p.id === item.productId))

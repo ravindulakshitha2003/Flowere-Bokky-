@@ -1,6 +1,6 @@
+import { useState, useEffect } from 'react'
 import { Helmet } from 'react-helmet-async'
 import { useLocation } from 'react-router-dom'
-import { useStore } from '../context/StoreContext'
 
 const DEFAULT_DESCRIPTION =
   'Hand-crafted flower bouquets delivered with love in Sri Lanka. Natural flowers and hand-ribbon bouquets for every occasion.'
@@ -39,11 +39,34 @@ export default function SEOHead({ title, description, image }) {
 
 export function RouteSEO() {
   const { pathname } = useLocation()
-  const { products } = useStore()
+  const [product, setProduct] = useState(null)
 
   const productMatch = pathname.match(/^\/product\/([^/]+)$/)
-  if (productMatch) {
-    const product = products.find((p) => p.id === productMatch[1])
+  const productId = productMatch ? productMatch[1] : null
+
+  // Fetch this one product directly whenever the route is a /product/:id page.
+  // No shared store anymore, so each place that needs product data fetches its own.
+  useEffect(() => {
+    if (!productId) {
+      setProduct(null)
+      return
+    }
+    let cancelled = false
+    async function fetchProduct() {
+      try {
+        const res = await fetch(`http://localhost:3000/api/products/${productId}`)
+        if (!res.ok) throw new Error(`Failed to fetch product: ${res.status}`)
+        const data = await res.json()
+        if (!cancelled) setProduct(data.product)
+      } catch (err) {
+        console.log(err.message)
+      }
+    }
+    fetchProduct()
+    return () => { cancelled = true }
+  }, [productId])
+
+  if (productId) {
     return (
       <SEOHead
         title={product?.name || 'Product Details'}

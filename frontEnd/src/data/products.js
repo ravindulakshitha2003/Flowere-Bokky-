@@ -161,6 +161,7 @@ export const products = [
       { q: 'Is delivery available in Jaffna?', a: 'We deliver island-wide including Northern Province with 2–3 day lead time.' },
       { q: 'Are these flowers pesticide-free?', a: 'We source from certified organic growers wherever possible.' },
     ],
+    
   },
   {
     id: 'bb-006',

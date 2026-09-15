@@ -1,7 +1,5 @@
 # Bloom & Bliss
 
-sustank <-  add tocard funtions 
-
 Premium flower bouquet e-commerce SPA for Sri Lanka — built with React 18, React Router v6, Tailwind CSS, and CSS Modules.
 
 ## Quick Start

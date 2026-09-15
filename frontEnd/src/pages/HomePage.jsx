@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
-import { categories } from '../data/products'
+
 import { reviews } from '../data/reviews'
-import { useStore } from '../context/StoreContext'
+
 import { seasonalOffer } from '../data/offers'
 import { formatPrice } from '../utils/helpers'
 import ProductCard from '../components/ui/ProductCard'

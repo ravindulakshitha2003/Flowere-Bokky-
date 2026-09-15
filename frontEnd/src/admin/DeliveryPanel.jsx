@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Loader2 } from 'lucide-react'
 import { formatPrice } from '../utils/helpers'
 import ConfirmModal from './ConfirmModal'
-import { useStore } from '../context/StoreContext'
+
 import { useToast } from '../context/ToastContext'
 import styles from './adminShared.module.css'
 import dashStyles from '../pages/AdminDashboard.module.css'

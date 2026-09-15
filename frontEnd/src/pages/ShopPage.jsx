@@ -1,7 +1,6 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { SlidersHorizontal, X } from 'lucide-react'
 import { getDiscountedPrice } from '../data/products'
-import { useStore } from '../context/StoreContext'
 import FilterPanel from '../components/shop/FilterPanel'
 import ProductCard from '../components/ui/ProductCard'
 import styles from './ShopPage.module.css'
@@ -28,11 +27,50 @@ const defaultFilters = {
 }
 
 export default function ShopPage() {
-  const { activeProducts } = useStore()
-  const [filters, setFilters] = useState(defaultFilters)
-  const [sort, setSort] = useState('popular')
-  const [mobileFilters, setMobileFilters] = useState(false)
 
+  
+  const [islorded , setlorderd] =  useState(false);
+  const API_BASE="http://localhost:3000/api/products"
+
+
+
+
+  const [filters, setFilters] = useState(defaultFilters);
+  const [sort, setSort] = useState('popular');
+  const [mobileFilters, setMobileFilters] = useState(false);
+  const [activeProducts, setProduct] = useState([]);
+
+
+  useEffect(() => {
+     if(!islorded){
+
+        async function fetchProducts() {
+        try {
+          setlorderd(true)
+          const res = await fetch(API_BASE)
+          if (!res.ok) throw new Error(`Failed to fetch products: ${res.status}`);
+          const data = await res.json();
+          const list = Array.isArray(data.allproduct) ? data.allproduct : [];
+          setProduct(list);
+          } catch (err) {
+            console.log(err.message);
+        
+          }
+        }
+      fetchProducts();
+      
+
+     }
+  
+      
+    }, [])
+
+
+
+
+
+
+  
   const filtered = useMemo(() => {
     let result = [...activeProducts]
 

@@ -1,26 +1,26 @@
 {
-  "name": "bloom-and-bliss-backend",
-  "version": "1.0.0",
-  "description": "Express + MongoDB backend API for the Bloom & Bliss flower e-commerce frontend",
-  "main": "server.js",
-  "type": "commonjs",
-  "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js",
-    "seed": "node src/utils/seed.js"
-  },
   "dependencies": {
-    "bcryptjs": "^2.4.3",
-    "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
-    "express": "^4.19.2",
-    "express-async-handler": "^1.2.0",
-    "google-auth-library": "^9.11.0",
-    "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.5.0",
-    "morgan": "^1.10.0"
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3"
   },
+  "name": "flower_backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon index.js",
+    "start": "node index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "ense": "ISC",
+  "type": "module",
   "devDependencies": {
-    "nodemon": "^3.1.4"
+    "mongoose": "^9.10.0",
+    "nodemon": "^3.1.14"
   }
 }

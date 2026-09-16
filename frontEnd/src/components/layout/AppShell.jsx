@@ -7,14 +7,14 @@ import HomePage from '../../pages/HomePage'
 import ShopPage from '../../pages/ShopPage'
 import ProductDetailPage from '../../pages/ProductDetailPage.jsx'
 import GalleryPage from '../../pages/GalleryPage'
-// import CartPage from '../../pages/CartPage'
-// import WishlistPage from '../../pages/WishlistPage'
-// import CheckoutPage from '../../pages/CheckoutPage'
-// import OrderTrackingPage from '../../pages/OrderTrackingPage'
-// import LoginPage from '../../pages/LoginPage'
-// import RegisterPage from '../../pages/RegisterPage'
-// import AccountPage from '../../pages/AccountPage'
-// import AdminDashboard from '../../pages/AdminDashboard'
+import CartPage from '../../pages/CartPage'
+import WishlistPage from '../../pages/WishlistPage'
+import CheckoutPage from '../../pages/CheckoutPage'
+import OrderTrackingPage from '../../pages/OrderTrackingPage'
+import LoginPage from '../../pages/LoginPage'
+import RegisterPage from '../../pages/RegisterPage'
+import AccountPage from '../../pages/AccountPage'
+import AdminDashboard from '../../pages/AdminDashboard'
 
 export default function AppShell() {
   const { festivalMode } = useFestival()
@@ -24,7 +24,7 @@ export default function AppShell() {
       <FestivalParticles mode={festivalMode} />
       <div className="app-content">
         <Routes>
-          {/* <Route path="/login" element={<LoginPage />} />
+          <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route
             path="/admin"
@@ -33,14 +33,14 @@ export default function AppShell() {
                 <AdminDashboard />
               </ProtectedRoute>
             }
-          /> */}
+          />
           <Route element={<Layout />}>
            <Route path="shop" element={<ShopPage />} />
             <Route path="product/:id" element={<ProductDetailPage />} />
             <Route path="gallery" element={<GalleryPage />} />
              <Route index element={<HomePage />} />
           
-            {/* 
+            
            
            
             
@@ -62,7 +62,7 @@ export default function AppShell() {
                   <AccountPage />
                 </ProtectedRoute>
               }
-            /> */}
+            />
           </Route>
         </Routes>
       </div>

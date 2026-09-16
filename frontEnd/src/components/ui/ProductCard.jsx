@@ -10,6 +10,13 @@ import styles from './ProductCard.module.css'
 
 const SIZE_LABELS = { S: 'Small', M: 'Medium', L: 'Large' }
 
+const TYPE_ICONS = {
+  'Natural Flowers': '🌸',
+  'Hand-Ribbon': '🎀',
+  'Vase-Arrangement': '🏺',
+  'Boxed-Bouquet': '🎁',
+}
+
 function buildWishlistSnapshot(product) {
   return {
     wishlistItemId: Date.now().toString(),
@@ -71,12 +78,25 @@ export default function ProductCard({ product, showSizeSelector = false }) {
   }
 
   return (
-    <Link to={`/product/bb-004`} className={styles.card}>
+    <Link to={`/product/${product.id}`} className={styles.card}>
       <div className={styles.imageWrap}>
         <div
           className={styles.image}
           style={{ background: getGradientForProduct(product.id) }}
-        />
+        >
+          {product.images?.[0] && (
+            <img src={product.images[0]} alt={product.name} className={styles.imagePhoto} loading="lazy" decoding="async" />
+          )}
+          {product.images?.[1] && (
+            <img
+              src={product.images[1]}
+              alt=""
+              className={`${styles.imagePhoto} ${styles.imagePhotoHover}`}
+              loading="lazy"
+              decoding="async"
+            />
+          )}
+        </div>
         {product.isOffer && (
           <span className={styles.offerBadge}>OFFER -{product.offerDiscount}%</span>
         )}
@@ -96,7 +116,7 @@ export default function ProductCard({ product, showSizeSelector = false }) {
       <div className={styles.content}>
         <h3 className={styles.name}>{product.name}</h3>
         <span className={styles.type}>
-          {product.type === 'Natural Flowers' ? '🌸 Natural' : '🎀 Hand-Ribbon'}
+          {TYPE_ICONS[product.type] || '💐'} {product.type}
         </span>
 
         {showSizeSelector && (

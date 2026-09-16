@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
-import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
 import { validateEmail } from '../utils/helpers'
 import styles from './AuthPages.module.css'
@@ -14,7 +13,6 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState({})
 
-  const { login } = useAuth()
   const { showToast } = useToast()
   const navigate = useNavigate()
   const location = useLocation()
@@ -36,7 +34,22 @@ export default function LoginPage() {
 
     setLoading(true)
     try {
-      await login(email, password)
+      const res = await fetch('http://localhost:3000/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.message || 'Login failed. Please try again.')
+      }
+
+      // No JWT yet — persist the logged-in user so the app knows who's signed in
+      // across refreshes. Swap this for a token once the backend issues one.
+      localStorage.setItem('user', JSON.stringify(data.user))
+
       showToast('Welcome back! 🌸', 'success')
       navigate(from, { replace: true })
     } catch (err) {
@@ -120,10 +133,6 @@ export default function LoginPage() {
 
           <p className={styles.switchAuth}>
             Don't have an account? <Link to="/register">Register →</Link>
-          </p>
-
-          <p className={styles.demoHint}>
-            Demo: amaya@email.lk / password123 · admin@bloomandbliss.lk / admin123
           </p>
         </div>
       </div>

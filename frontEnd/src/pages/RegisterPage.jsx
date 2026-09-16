@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
-import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
 import { validateEmail, validatePhone, getPasswordStrength } from '../utils/helpers'
 import styles from './AuthPages.module.css'
@@ -15,7 +14,6 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState({})
 
-  const { register } = useAuth()
   const { showToast } = useToast()
   const navigate = useNavigate()
 
@@ -44,9 +42,26 @@ export default function RegisterPage() {
 
     setLoading(true)
     try {
-      await register(form)
-      showToast('Account created! Welcome to Bloom & Bliss 🌸', 'success')
-      navigate('/')
+      const res = await fetch('http://localhost:3000/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: form.name,
+          email: form.email,
+          phone: form.phone,
+          password: form.password,
+          termsAccepted: terms,
+        }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.message || 'Registration failed. Please try again.')
+      }
+
+      showToast('Account created! Please sign in 🌸', 'success')
+      navigate('/login')
     } catch (err) {
       setErrors({ form: err.message })
     } finally {

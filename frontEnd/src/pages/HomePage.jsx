@@ -1,7 +1,8 @@
+import { useState, useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 
 import { reviews } from '../data/reviews'
-
+import { categories } from '../data/products'
 import { seasonalOffer } from '../data/offers'
 import { formatPrice } from '../utils/helpers'
 import ProductCard from '../components/ui/ProductCard'
@@ -15,13 +16,66 @@ const steps = [
   { num: 4, icon: '🚚', title: 'Delivered to You', desc: 'Fresh blooms arrive at your door, beautifully packaged.' },
 ]
 
+// Fixed palette gallery-preview tiles are drawn from — mirrors GalleryPage,
+// so the two pages look consistent even though neither gradient is tied to
+// a specific image.
+const GRADIENTS = [
+  'linear-gradient(160deg, #F2A7BB, #C9A84C)',
+  'linear-gradient(145deg, #C9A84C, #F2A7BB)',
+  'linear-gradient(135deg, #7A9E7E, #F9EDD3)',
+  'linear-gradient(120deg, #FFD6E0, #C2185B)',
+  'linear-gradient(170deg, #F9EDD3, #7A9E7E)',
+  'linear-gradient(150deg, #C2185B, #FFD6E0)',
+  'linear-gradient(140deg, #FFFDF8, #F2A7BB)',
+  'linear-gradient(130deg, #7A9E7E, #C9A84C)',
+]
+
+function randomGradient() {
+  return GRADIENTS[Math.floor(Math.random() * GRADIENTS.length)]
+}
+
 export default function HomePage() {
-  const { activeProducts, featuredGallery, galleryItems } = useStore()
-  const bestsellers = activeProducts.filter((p) => p.rating >= 4.7).slice(0, 6)
-  const galleryPreview = (featuredGallery.length > 0
-    ? featuredGallery
-    : galleryItems.filter((g) => g.isApproved === true && g.tab === 'work')
-  ).slice(0, 6)
+  const [products, setProducts] = useState([])
+  const [galleryImages, setGalleryImages] = useState([])
+
+  useEffect(() => {
+    async function fetchProducts() {
+      try {
+        const res = await fetch('http://localhost:3000/api/products')
+        if (!res.ok) throw new Error(`Failed to fetch products: ${res.status}`)
+        const data = await res.json()
+        setProducts(Array.isArray(data.allproduct) ? data.allproduct : [])
+      } catch (err) {
+        console.log(err.message)
+      }
+    }
+    async function fetchImages() {
+      try {
+        const res = await fetch('http://localhost:3000/api/image')
+        if (!res.ok) throw new Error(`Failed to fetch images: ${res.status}`)
+        const data = await res.json()
+        const list = Array.isArray(data.allimage) ? data.allimage : []
+        setGalleryImages(list.filter((img) => img.isApproved !== false))
+      } catch (err) {
+        console.log(err.message)
+      }
+    }
+    fetchProducts()
+    fetchImages()
+  }, [])
+
+  const bestsellers = products.filter((p) => p.rating >= 4.7).slice(0, 6)
+
+  const galleryPreview = useMemo(
+    () => galleryImages.slice(0, 6).map((img) => ({ ...img, gradient: randomGradient() })),
+    [galleryImages]
+  )
+
+  // Cycle the same fetched gallery photos into the category tiles, layered
+  // over each tile's existing gradient — there's no per-category image field
+  // from the backend, so this reuses whatever /api/image returns.
+  const categoryPhoto = (index) =>
+    galleryImages.length > 0 ? galleryImages[index % galleryImages.length].link : null
 
   return (
     <div className={styles.home}>
@@ -65,9 +119,13 @@ export default function HomePage() {
       <section className={styles.section}>
         <div className="container">
           <div className={styles.categoryGrid}>
-            {categories.map((cat) => (
+            {categories.map((cat, i) => (
               <Link key={cat.id} to={`/shop?size=${cat.id}`} className={styles.categoryCard}>
-                <div className={styles.categoryImage} style={{ background: cat.gradient }} />
+                <div className={styles.categoryImage} style={{ background: cat.gradient }}>
+                  {categoryPhoto(i) && (
+                    <img src={categoryPhoto(i)} alt={cat.name} className={styles.categoryPhoto} loading="lazy" decoding="async" />
+                  )}
+                </div>
                 <div className={styles.categoryInfo}>
                   <h3>{cat.name}</h3>
                   <p>{cat.flowers}</p>
@@ -81,18 +139,20 @@ export default function HomePage() {
       </section>
 
       {/* Bestsellers */}
-      <section className={styles.section}>
-        <div className="container">
-          <h2 className={styles.sectionTitle}>Our Bestsellers</h2>
-          <div className={styles.bestsellerScroll}>
-            {bestsellers.map((p) => (
-              <div key={p.id} className={styles.bestsellerCard}>
-                <ProductCard product={p} />
-              </div>
-            ))}
+      {bestsellers.length > 0 && (
+        <section className={styles.section}>
+          <div className="container">
+            <h2 className={styles.sectionTitle}>Our Bestsellers</h2>
+            <div className={styles.bestsellerScroll}>
+              {bestsellers.map((p) => (
+                <div key={p.id} className={styles.bestsellerCard}>
+                  <ProductCard product={p} />
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* How It Works */}
       <section className={`${styles.section} ${styles.howItWorks}`}>
@@ -140,28 +200,31 @@ export default function HomePage() {
       </section>
 
       {/* Gallery Preview */}
-      <section className={styles.section}>
-        <div className="container">
-          <div className={styles.galleryHeader}>
-            <h2 className={styles.sectionTitle}>Our Work</h2>
-            <Link to="/gallery" className={styles.galleryLink}>View Full Gallery →</Link>
-          </div>
-          <div className={styles.masonryGrid}>
-            {galleryPreview.map((item, i) => (
-              <div
-                key={item.id}
-                className={styles.masonryItem}
-                style={{ background: item.gradient, gridRow: i % 3 === 0 ? 'span 2' : 'span 1' }}
-              >
-                <div className={styles.masonryOverlay}>
-                  <span>{item.title}</span>
-                  <span className={styles.masonryTag}>{item.occasion}</span>
+      {galleryPreview.length > 0 && (
+        <section className={styles.section}>
+          <div className="container">
+            <div className={styles.galleryHeader}>
+              <h2 className={styles.sectionTitle}>Our Work</h2>
+              <Link to="/gallery" className={styles.galleryLink}>View Full Gallery →</Link>
+            </div>
+            <div className={styles.masonryGrid}>
+              {galleryPreview.map((item, i) => (
+                <div
+                  key={item._id || item.id}
+                  className={styles.masonryItem}
+                  style={{ background: item.gradient, gridRow: i % 3 === 0 ? 'span 2' : 'span 1' }}
+                >
+                  <img src={item.link} alt={item.title || ''} className={styles.masonryImage} loading="lazy" decoding="async" />
+                  <div className={styles.masonryOverlay}>
+                    <span>{item.title}</span>
+                    {item.occasion && <span className={styles.masonryTag}>{item.occasion}</span>}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Seasonal Offer */}
       {seasonalOffer.isActive && (

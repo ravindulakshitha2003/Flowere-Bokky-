@@ -8,7 +8,7 @@ import { useCart } from '../context/CartContext'
 import { useWishlist } from '../context/WishlistContext'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
-import { formatPrice, getGradientForProduct } from '../utils/helpers'
+import { formatPrice } from '../utils/helpers'
 import ProductCard from '../components/ui/ProductCard'
 import styles from './ProductDetailPage.module.css'
 
@@ -31,6 +31,7 @@ const WRAPPING_COLORS = {
   'Coral Sunset': '#FF8A65', 'White Linen': '#FAFAFA', 'Pearl Satin': '#F5F0EB',
   'Champagne Mesh': '#F9EDD3', 'Lilac Satin': '#CE93D8', 'Lavender Mesh': '#E1BEE7',
   'Festival Orange': '#FF9800', 'Avurudu Gold': '#C9A84C', 'Red Silk': '#C2185B',
+  'Gold Velvet': '#C9A84C', 'Deep Red Matte': '#8E1B3A', 'Black Silk': '#2B2B2B',
 }
 
 export default function ProductDetailPage() {
@@ -72,6 +73,7 @@ export default function ProductDetailPage() {
         if (!res.ok) throw new Error(`Failed to fetch product: ${res.status}`)
         const data = await res.json()
         setProduct(data.product)
+        setActiveImage(0)
         setWrapping(data.product.wrappingOptions?.[0] || '')
       } catch (err) {
         console.log(err.message)
@@ -181,18 +183,28 @@ export default function ProductDetailPage() {
         <div className={styles.layout}>
           {/* Gallery */}
           <div className={styles.gallery}>
-            <div
-              className={styles.mainImage}
-              style={{ background: getGradientForProduct(product.id + activeImage) }}
-            />
+            <div className={styles.mainImageWrap}>
+              <img
+                key={activeImage}
+                src={product.images[activeImage]}
+                alt={`${product.name} - view ${activeImage + 1}`}
+                className={styles.mainImage}
+              />
+            </div>
             <div className={styles.thumbs}>
-              {product.images.map((_, i) => (
+              {product.images.map((img, i) => (
                 <button
                   key={i}
+                  type="button"
                   className={`${styles.thumb} ${activeImage === i ? styles.thumbActive : ''}`}
-                  style={{ background: getGradientForProduct(product.id + i) }}
                   onClick={() => setActiveImage(i)}
-                />
+                >
+                  <img
+                    src={img}
+                    alt={`${product.name} thumbnail ${i + 1}`}
+                    className={styles.thumbImg}
+                  />
+                </button>
               ))}
             </div>
           </div>

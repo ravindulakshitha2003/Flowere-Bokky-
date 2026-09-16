@@ -1,11 +1,12 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
-import { mockOrders } from '../data/orders'
 import { formatPrice, getPasswordStrength } from '../utils/helpers'
 import ThemeToggle from '../components/ui/ThemeToggle'
 import styles from './AccountPage.module.css'
+
+const API_BASE = 'http://localhost:3000'
 
 const NAV = [
   { id: 'orders', label: '📦 My Orders', icon: '📦' },
@@ -15,16 +16,38 @@ const NAV = [
 
 const STATUS_CONFIG = {
   pending: { label: '⏳ Pending', tone: 'pending' },
-  'in-progress': { label: '🌸 Preparing', tone: 'preparing' },
+  confirmed: { label: '🌸 Confirmed', tone: 'preparing' },
   preparing: { label: '🌸 Preparing', tone: 'preparing' },
+  'in-progress': { label: '🌸 Preparing', tone: 'preparing' },
+  out_for_delivery: { label: '🚚 On the Way', tone: 'delivering' },
   delivering: { label: '🚚 On the Way', tone: 'delivering' },
-  completed: { label: '🚚 On the Way', tone: 'delivering' },
+  completed: { label: '✅ Delivered', tone: 'delivered' },
   delivered: { label: '✅ Delivered', tone: 'delivered' },
   cancelled: { label: '❌ Cancelled', tone: 'cancelled' },
 }
 
 function getStatus(status) {
   return STATUS_CONFIG[status] || { label: status, tone: 'pending' }
+}
+
+// Safely extracts the user ID directly from JWT payload
+function getUserIdFromToken(token) {
+  if (!token) return null
+  try {
+    const base64Url = token.split('.')[1]
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    )
+    const payload = JSON.parse(jsonPayload)
+    return payload.id || payload._id || payload.userId || payload.sub || null
+  } catch (err) {
+    console.error('Failed to decode JWT token:', err)
+    return null
+  }
 }
 
 export default function AccountPage() {
@@ -35,6 +58,11 @@ export default function AccountPage() {
   const [activeTab, setActiveTab] = useState('orders')
   const [selectedOrder, setSelectedOrder] = useState(null)
   const [showPassword, setShowPassword] = useState(false)
+
+  // Real backend order state
+  const [orders, setOrders] = useState([])
+  const [loadingOrders, setLoadingOrders] = useState(true)
+
   const [profile, setProfile] = useState({
     name: user?.name || '',
     email: user?.email || '',
@@ -46,12 +74,52 @@ export default function AccountPage() {
     confirm: '',
   })
 
-  const userOrders = mockOrders.filter(
-    (o) => o.email === user?.email || o.userId === user?.id
-  )
+  // Fetch orders using JWT token decoding
+  useEffect(() => {
+    const fetchUserOrders = async () => {
+      const token = localStorage.getItem('token')
+      const decodedUserId = getUserIdFromToken(token) || user?.id || user?._id
 
-  const pendingCount = userOrders.filter((o) => o.status === 'pending').length
-  const deliveredCount = userOrders.filter((o) => o.status === 'delivered').length
+      if (!token || !decodedUserId) {
+        setLoadingOrders(false)
+        return
+      }
+
+      try {
+        setLoadingOrders(true)
+        const res = await fetch(`${API_BASE}/api/orders?userId=${decodedUserId}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+        })
+
+        if (!res.ok) {
+          throw new Error('Failed to fetch orders from server')
+        }
+
+        const data = await res.json()
+        setOrders(data.orders || [])
+      } catch (err) {
+        console.error(err)
+        showToast(err.message || 'Could not load your orders', 'error')
+      } finally {
+        setLoadingOrders(false)
+      }
+    }
+
+    if (activeTab === 'orders') {
+      fetchUserOrders()
+    }
+  }, [user, activeTab, showToast])
+
+  const pendingCount = orders.filter(
+    (o) => o.status === 'pending' || o.status === 'preparing' || o.status === 'confirmed'
+  ).length
+  const deliveredCount = orders.filter(
+    (o) => o.status === 'delivered' || o.status === 'completed'
+  ).length
 
   const pwdStrength = getPasswordStrength(passwords.next)
 
@@ -146,7 +214,7 @@ export default function AccountPage() {
                 <h1 className={styles.contentTitle}>My Orders</h1>
                 <div className={styles.summaryRow}>
                   <div className={styles.summaryCard}>
-                    <span className={styles.summaryNum}>{userOrders.length}</span>
+                    <span className={styles.summaryNum}>{orders.length}</span>
                     <span>Total Orders</span>
                   </div>
                   <div className={styles.summaryCard}>
@@ -159,7 +227,9 @@ export default function AccountPage() {
                   </div>
                 </div>
 
-                {userOrders.length === 0 ? (
+                {loadingOrders ? (
+                  <p className={styles.emptyOrders}>Loading your orders...</p>
+                ) : orders.length === 0 ? (
                   <p className={styles.emptyOrders}>
                     No orders yet. <Link to="/shop">Start shopping →</Link>
                   </p>
@@ -177,14 +247,19 @@ export default function AccountPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {userOrders.map((order) => {
+                        {orders.map((order) => {
                           const st = getStatus(order.status)
+                          const firstItem = order.items?.[0]
+                          const itemSummary = firstItem
+                            ? `${firstItem.name} (${firstItem.size}) ${order.items.length > 1 ? `+${order.items.length - 1} more` : ''}`
+                            : 'N/A'
+
                           return (
-                            <tr key={order.id}>
-                              <td>{order.id}</td>
-                              <td>{new Date(order.createdAt).toLocaleDateString('en-LK')}</td>
-                              <td>{order.product} ({order.size})</td>
-                              <td>{formatPrice(order.total)}</td>
+                            <tr key={order._id || order.orderId}>
+                              <td>{order.orderId}</td>
+                              <td>{new Date(order.placedAt || order.createdAt).toLocaleDateString('en-LK')}</td>
+                              <td>{itemSummary}</td>
+                              <td>{formatPrice(order.pricing?.total ?? 0)}</td>
                               <td>
                                 <span className={`${styles.statusBadge} ${styles[`status_${st.tone}`]}`}>
                                   {st.label}
@@ -192,7 +267,7 @@ export default function AccountPage() {
                               </td>
                               <td>
                                 <div className={styles.rowActions}>
-                                  <Link to={`/track/${order.id}`} className={styles.linkBtn}>
+                                  <Link to={`/track/${order.orderId}`} className={styles.linkBtn}>
                                     Track Order
                                   </Link>
                                   <button
@@ -304,10 +379,10 @@ export default function AccountPage() {
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
             <h2>Order Details</h2>
             <div className={styles.modalGrid}>
-              <div><span>Order ID</span><strong>{selectedOrder.id}</strong></div>
+              <div><span>Order ID</span><strong>{selectedOrder.orderId}</strong></div>
               <div>
                 <span>Date</span>
-                <strong>{new Date(selectedOrder.createdAt).toLocaleString('en-LK')}</strong>
+                <strong>{new Date(selectedOrder.placedAt || selectedOrder.createdAt).toLocaleString('en-LK')}</strong>
               </div>
               <div>
                 <span>Status</span>
@@ -315,28 +390,30 @@ export default function AccountPage() {
               </div>
             </div>
             <h3>Items</h3>
-            <div className={styles.modalItem}>
-              <strong>{selectedOrder.product}</strong>
-              <span>Size: {selectedOrder.size}</span>
-              <span>Qty: 1</span>
-              <span>{formatPrice(selectedOrder.total)}</span>
-            </div>
+            {selectedOrder.items?.map((it, idx) => (
+              <div key={idx} className={styles.modalItem}>
+                <strong>{it.name}</strong>
+                <span>Size: {it.sizeLabel || it.size}</span>
+                <span>Qty: {it.quantity}</span>
+                <span>{formatPrice(it.lineTotal || (it.unitPrice * it.quantity))}</span>
+              </div>
+            ))}
             <h3>Delivery</h3>
             <p className={styles.modalText}>
-              Address: {selectedOrder.customer}, Colombo, Sri Lanka<br />
-              Slot: Morning · {new Date(selectedOrder.deadline).toLocaleDateString('en-LK')}
+              Address: {selectedOrder.delivery?.address}<br />
+              Slot: {selectedOrder.delivery?.slotLabel || 'Standard'} · {selectedOrder.delivery?.date}
             </p>
             <div className={styles.modalTotals}>
-              <div><span>Shipping</span><span>{formatPrice(300)}</span></div>
-              <div><span>Total</span><strong>{formatPrice(selectedOrder.total)}</strong></div>
-              <div><span>Payment</span><span>Card / COD</span></div>
+              <div><span>Shipping</span><span>{formatPrice(selectedOrder.pricing?.shippingCost ?? 0)}</span></div>
+              <div><span>Total</span><strong>{formatPrice(selectedOrder.pricing?.total ?? 0)}</strong></div>
+              <div><span>Payment</span><span>{selectedOrder.payment?.method === 'cod' ? 'Cash on Delivery' : 'Card'}</span></div>
             </div>
             <div className={styles.modalActions}>
               <button type="button" className="btn-outline" onClick={() => setSelectedOrder(null)}>
                 Close
               </button>
               <Link
-                to={`/track/${selectedOrder.id}`}
+                to={`/track/${selectedOrder.orderId}`}
                 className="btn-primary"
                 onClick={() => setSelectedOrder(null)}
               >

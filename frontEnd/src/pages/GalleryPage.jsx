@@ -37,7 +37,12 @@ export default function GalleryPage() {
       try {
         setLoading(true)
         setError(null)
-        const res = await fetch('http://localhost:3000/api/image')
+        const token = localStorage.getItem('token')
+        const res = await fetch('http://localhost:3000/api/image', {
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        })
         if (!res.ok) throw new Error(`Failed to fetch images: ${res.status}`)
         const data = await res.json()
         const list = Array.isArray(data.allimage) ? data.allimage : []

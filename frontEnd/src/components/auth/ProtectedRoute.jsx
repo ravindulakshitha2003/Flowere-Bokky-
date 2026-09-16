@@ -1,16 +1,28 @@
+// src/components/auth/ProtectedRoute.jsx
 import { Navigate, useLocation } from 'react-router-dom'
 import { useEffect, useRef } from 'react'
-import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
 
 export default function ProtectedRoute({ children, adminOnly = false }) {
-  const { isLoggedIn, isAdmin, loading } = useAuth()
   const location = useLocation()
   const { showToast } = useToast()
   const toastShownRef = useRef(false)
 
+  const token = localStorage.getItem('token')
+  const isLoggedIn = !!token
+
+  let user = null
+  if (isLoggedIn) {
+    try {
+      user = JSON.parse(localStorage.getItem('user') || 'null')
+    } catch {
+      user = null
+    }
+  }
+  const isAdmin = user?.role === 'admin'
+
   useEffect(() => {
-    if (!loading && !isLoggedIn && !toastShownRef.current) {
+    if (!isLoggedIn && !toastShownRef.current) {
       const needsLoginToast = ['/checkout', '/account', '/admin'].some((p) =>
         location.pathname.startsWith(p)
       )
@@ -22,19 +34,7 @@ export default function ProtectedRoute({ children, adminOnly = false }) {
     if (isLoggedIn) {
       toastShownRef.current = false
     }
-  }, [loading, isLoggedIn, location.pathname, showToast])
-
-  if (loading) {
-    return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
-        <div style={{
-          width: 40, height: 40, border: '3px solid var(--petal)',
-          borderTopColor: 'var(--rose-deep)', borderRadius: '50%',
-          animation: 'spin 0.8s linear infinite',
-        }} />
-      </div>
-    )
-  }
+  }, [isLoggedIn, location.pathname, showToast])
 
   if (!isLoggedIn) {
     return <Navigate to="/login" state={{ from: location.pathname }} replace />

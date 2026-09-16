@@ -1,29 +1,18 @@
+// src/pages/ProductDetailPage.jsx
 import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { Star, Heart, ChevronDown, ChevronUp } from 'lucide-react'
 import { addons, getDiscountedPrice } from '../data/products'
-
 import { getReviewsByProduct } from '../data/reviews'
 import { useCart } from '../context/CartContext'
 import { useWishlist } from '../context/WishlistContext'
-import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
 import { formatPrice } from '../utils/helpers'
 import ProductCard from '../components/ui/ProductCard'
 import styles from './ProductDetailPage.module.css'
 
+const API = 'http://localhost:3000/api'
 const SIZE_LABELS = { S: 'Small', M: 'Medium', L: 'Large' }
-
-function buildWishlistSnapshot(product) {
-  return {
-    wishlistItemId: Date.now().toString(),
-    productId: product.id,
-    name: product.name,
-    price: product.sizes?.S?.price ?? 0,
-    image: product.imageData?.main ?? product.images?.[0] ?? null,
-    type: product.type,
-  }
-}
 
 const WRAPPING_COLORS = {
   'Blush Pink': '#F2A7BB', 'Ivory Silk': '#FFFDF8', 'Sage Green': '#7A9E7E',
@@ -34,16 +23,27 @@ const WRAPPING_COLORS = {
   'Gold Velvet': '#C9A84C', 'Deep Red Matte': '#8E1B3A', 'Black Silk': '#2B2B2B',
 }
 
+function buildWishlistSnapshot(product) {
+  return {
+    wishlistItemId: Date.now().toString(),
+    productId: product._id || product.id,
+    name: product.name,
+    price: product.sizes?.S?.price ?? 0,
+    image: product.imageData?.main ?? product.images?.[0] ?? null,
+    type: product.type,
+  }
+}
+
 export default function ProductDetailPage() {
   const { id } = useParams()
-
   const navigate = useNavigate()
   const { addItem } = useCart()
   const { toggle, isWishlisted } = useWishlist()
-  const { isLoggedIn } = useAuth()
   const { showToast } = useToast()
-  // Related products are now fetched directly in this component (no shared store)
+
+  const [product, setProduct] = useState(null)
   const [allProducts, setAllProducts] = useState([])
+  const [isLoaded, setIsLoaded] = useState(false)
 
   const [selectedSize, setSelectedSize] = useState('M')
   const [activeImage, setActiveImage] = useState(0)
@@ -51,30 +51,32 @@ export default function ProductDetailPage() {
   const [surpriseMe, setSurpriseMe] = useState(false)
   const [selectedAddons, setSelectedAddons] = useState([])
   const [giftMessage, setGiftMessage] = useState('')
+  const [quantity, setQuantity] = useState(1)
   const [activeTab, setActiveTab] = useState('description')
   const [openAccordion, setOpenAccordion] = useState('lighting')
   const [showReviewForm, setShowReviewForm] = useState(false)
   const [reviewRating, setReviewRating] = useState(5)
   const [reviewText, setReviewText] = useState('')
 
-  const [isLoaded, setIsLoaded] = useState(false)
-  const [product, setProduct] = useState(null)
-
-  // CHANGE 3: added `id` to the dependency array and reset isLoaded/product when it
-  // changes, so navigating from one product page to another (e.g. via "related")
-  // actually re-fetches instead of showing the previous product forever.
+  // --- fetch single product (re-runs when id changes) ---
   useEffect(() => {
     setIsLoaded(false)
     setProduct(null)
 
     async function fetchProduct() {
       try {
-        const res = await fetch(`http://localhost:3000/api/products/${id}`)
+        const res = await fetch(`${API}/products/${id}`)
         if (!res.ok) throw new Error(`Failed to fetch product: ${res.status}`)
         const data = await res.json()
-        setProduct(data.product)
+        const p = data.product
+        setProduct(p)
         setActiveImage(0)
-        setWrapping(data.product.wrappingOptions?.[0] || '')
+        setWrapping(p?.wrappingOptions?.[0] || '')
+        setSelectedAddons([])
+        setSurpriseMe(false)
+        setGiftMessage('')
+        setQuantity(1)
+        setSelectedSize('M')
       } catch (err) {
         console.log(err.message)
       } finally {
@@ -85,12 +87,11 @@ export default function ProductDetailPage() {
     fetchProduct()
   }, [id])
 
-  // Fetch the full products list once, for the "You May Also Love" section.
-  // This is a second, separate request from the single-product fetch above.
+  // --- fetch all products for "You May Also Love" ---
   useEffect(() => {
     async function fetchAllProducts() {
       try {
-        const res = await fetch('http://localhost:3000/api/products')
+        const res = await fetch(`${API}/products`)
         if (!res.ok) throw new Error(`Failed to fetch products: ${res.status}`)
         const data = await res.json()
         setAllProducts(Array.isArray(data.allproduct) ? data.allproduct : [])
@@ -101,8 +102,6 @@ export default function ProductDetailPage() {
     fetchAllProducts()
   }, [])
 
-  // CHANGE 4: show a loading state while fetching, and only show "not found"
-  // once the fetch has actually finished and there's still no product.
   if (!product) {
     if (!isLoaded) {
       return <div className={styles.notFound}><h2>Loading…</h2></div>
@@ -115,17 +114,19 @@ export default function ProductDetailPage() {
     )
   }
 
+  const productId = product._id || product.id
   const sizeData = product.sizes[selectedSize]
   const basePrice = product.isOffer
     ? getDiscountedPrice(sizeData.price, product.offerDiscount)
     : sizeData.price
   const addonsTotal = selectedAddons.reduce((s, a) => s + a.price, 0)
-  const subtotal = basePrice + product.packingCost + addonsTotal
+  const packingCost = product.packingCost ?? 0
+  const subtotal = (basePrice + packingCost + addonsTotal) * quantity
   const outOfStock = sizeData.stock === 0
-  const productReviews = getReviewsByProduct(product.id)
-  // `allProducts` now comes from the direct fetch above, not a shared store
+  const productReviews = getReviewsByProduct(productId)
+
   const related = allProducts
-    .filter((p) => p.id !== product.id && p.isActive !== false)
+    .filter((p) => (p._id || p.id) !== productId && p.isActive !== false)
     .slice(0, 4)
 
   const toggleAddon = (addon) => {
@@ -135,21 +136,45 @@ export default function ProductDetailPage() {
     })
   }
 
+  // --- the full snapshot the order payload is built from ---
   const handleAddToCart = () => {
     addItem({
-      cartItemId: Date.now().toString(),
-      productId: product.id,
+      cartItemId: `${productId}-${selectedSize}-${Date.now()}`,
+
+      productId,
       name: product.name,
+      type: product.type,
+      image: product.imageData?.main ?? product.images?.[0] ?? null,
+
       size: selectedSize,
       sizeLabel: SIZE_LABELS[selectedSize],
+      flowers: sizeData.flowers ?? null,
+
       price: basePrice,
-      image: product.imageData?.main ?? product.images?.[0] ?? null,
+      originalPrice: sizeData.price,
+      isOffer: !!product.isOffer,
+      offerDiscount: product.offerDiscount ?? 0,
+
+      packingCost,
+      packingMaterial: product.packingMaterial ?? null,
+      quality: product.quality ?? null,
+      weight: product.weight ?? null,
+      dimensions: product.dimensions ?? null,
+      colors: product.colors ?? [],
+      flowerList: product.flowers ?? [],
+
       wrapping: surpriseMe ? 'Surprise Me' : wrapping,
-      addons: selectedAddons,
-      giftMessage,
-      quantity: 1,
-      packingCost: product.packingCost ?? 0,
-      type: product.type,
+      surpriseMe,
+
+      addons: selectedAddons.map((a) => ({
+        addonId: a.id,
+        name: a.name,
+        price: a.price,
+        category: a.category ?? null,
+      })),
+
+      giftMessage: giftMessage.trim(),
+      quantity,
     })
     showToast(`${product.name} added to cart 🌸`, 'success')
   }
@@ -157,14 +182,15 @@ export default function ProductDetailPage() {
   const handleWishlistToggle = () => {
     toggle(buildWishlistSnapshot(product))
     showToast(
-      isWishlisted(product.id) ? 'Removed from wishlist' : 'Added to wishlist ♥',
+      isWishlisted(productId) ? 'Removed from wishlist' : 'Added to wishlist ♥',
       'info'
     )
   }
 
   const handleWriteReview = () => {
-    if (!isLoggedIn) {
-      showToast('Please log in to place an order 🌸', 'info')
+    const token = localStorage.getItem('token')
+    if (!token) {
+      showToast('Please log in to write a review 🌸', 'info')
       navigate('/login', { state: { from: `/product/${id}` } })
       return
     }
@@ -199,11 +225,7 @@ export default function ProductDetailPage() {
                   className={`${styles.thumb} ${activeImage === i ? styles.thumbActive : ''}`}
                   onClick={() => setActiveImage(i)}
                 >
-                  <img
-                    src={img}
-                    alt={`${product.name} thumbnail ${i + 1}`}
-                    className={styles.thumbImg}
-                  />
+                  <img src={img} alt={`${product.name} thumbnail ${i + 1}`} className={styles.thumbImg} />
                 </button>
               ))}
             </div>
@@ -235,7 +257,7 @@ export default function ProductDetailPage() {
                   className={`${styles.sizeCard} ${selectedSize === s ? styles.sizeSelected : ''}`}
                   onClick={() => setSelectedSize(s)}
                 >
-                  <span className={styles.sizeLabel}>{s === 'S' ? 'Small' : s === 'M' ? 'Medium' : 'Large'}</span>
+                  <span className={styles.sizeLabel}>{SIZE_LABELS[s]}</span>
                   <span>{product.sizes[s].flowers} flowers</span>
                   <strong>{formatPrice(
                     product.isOffer
@@ -252,14 +274,18 @@ export default function ProductDetailPage() {
               <div><span>Quality</span><strong>{product.quality}</strong></div>
               <div><span>Weight</span><strong>{product.weight}</strong></div>
               <div><span>Packing Material</span><strong>{product.packingMaterial}</strong></div>
-              <div><span>Packing Cost</span><strong>{formatPrice(product.packingCost)}</strong></div>
+              <div><span>Packing Cost</span><strong>{formatPrice(packingCost)}</strong></div>
             </div>
 
             {/* Wrapping */}
             <div className={styles.wrapping}>
               <h3>Wrapping Paper</h3>
               <label className={styles.surpriseCheck}>
-                <input type="checkbox" checked={surpriseMe} onChange={(e) => setSurpriseMe(e.target.checked)} />
+                <input
+                  type="checkbox"
+                  checked={surpriseMe}
+                  onChange={(e) => setSurpriseMe(e.target.checked)}
+                />
                 Surprise me — Let the florist choose
               </label>
               {!surpriseMe && (
@@ -313,13 +339,25 @@ export default function ProductDetailPage() {
               value={giftMessage}
               onChange={(e) => setGiftMessage(e.target.value)}
               rows={3}
+              maxLength={200}
             />
+
+            {/* Quantity */}
+            <div className={styles.qtyRow}>
+              <span>Quantity</span>
+              <div className={styles.qtyStepper}>
+                <button type="button" onClick={() => setQuantity((q) => Math.max(1, q - 1))}>−</button>
+                <span>{quantity}</span>
+                <button type="button" onClick={() => setQuantity((q) => q + 1)}>+</button>
+              </div>
+            </div>
 
             {/* Price Breakdown */}
             <div className={styles.priceBreakdown}>
               <div><span>Product ({selectedSize})</span><span>{formatPrice(basePrice)}</span></div>
-              <div><span>Packing Cost</span><span>{formatPrice(product.packingCost)}</span></div>
+              <div><span>Packing Cost</span><span>{formatPrice(packingCost)}</span></div>
               <div><span>Add-Ons</span><span>{formatPrice(addonsTotal)}</span></div>
+              {quantity > 1 && <div><span>Quantity</span><span>× {quantity}</span></div>}
               <div className={styles.divider} />
               <div className={styles.subtotalRow}>
                 <span>Subtotal</span><strong>{formatPrice(subtotal)}</strong>
@@ -334,12 +372,9 @@ export default function ProductDetailPage() {
             <button className={`btn-primary ${styles.addToCart}`} onClick={handleAddToCart}>
               Add to Cart
             </button>
-            <button
-              className={`btn-outline ${styles.wishlistBtn}`}
-              onClick={handleWishlistToggle}
-            >
-              <Heart size={18} fill={isWishlisted(product.id) ? 'currentColor' : 'none'} />
-              {isWishlisted(product.id) ? 'In Wishlist' : 'Add to Wishlist'}
+            <button className={`btn-outline ${styles.wishlistBtn}`} onClick={handleWishlistToggle}>
+              <Heart size={18} fill={isWishlisted(productId) ? 'currentColor' : 'none'} />
+              {isWishlisted(productId) ? 'In Wishlist' : 'Add to Wishlist'}
             </button>
 
             {outOfStock && (
@@ -375,8 +410,8 @@ export default function ProductDetailPage() {
                 <ul>{product.flowers.map((f) => <li key={f}>{f}</li>)}</ul>
                 <table className={styles.dimTable}>
                   <tbody>
-                    <tr><td>Height</td><td>{product.dimensions.height}</td></tr>
-                    <tr><td>Width</td><td>{product.dimensions.width}</td></tr>
+                    <tr><td>Height</td><td>{product.dimensions?.height}</td></tr>
+                    <tr><td>Width</td><td>{product.dimensions?.width}</td></tr>
                     <tr><td>Weight</td><td>{product.weight}</td></tr>
                   </tbody>
                 </table>
@@ -398,11 +433,16 @@ export default function ProductDetailPage() {
                 ))}
                 <button className="btn-outline" onClick={handleWriteReview}>Write a Review</button>
                 {showReviewForm && (
-                  <form className={styles.reviewForm} onSubmit={(e) => {
-                    e.preventDefault()
-                    showToast('Thank you for your review! 🌸', 'success')
-                    setShowReviewForm(false)
-                  }}>
+                  <form
+                    className={styles.reviewForm}
+                    onSubmit={(e) => {
+                      e.preventDefault()
+                      showToast('Thank you for your review! 🌸', 'success')
+                      setShowReviewForm(false)
+                      setReviewText('')
+                      setReviewRating(5)
+                    }}
+                  >
                     <div className={styles.starSelector}>
                       {[1, 2, 3, 4, 5].map((s) => (
                         <button key={s} type="button" onClick={() => setReviewRating(s)}>
@@ -430,9 +470,7 @@ export default function ProductDetailPage() {
             {activeTab === 'faq' && (
               <div className={styles.faqTab}>
                 {product.faq?.length > 0 ? (
-                  product.faq.map((item, i) => (
-                    <FaqItem key={i} question={item.q} answer={item.a} />
-                  ))
+                  product.faq.map((item, i) => <FaqItem key={i} question={item.q} answer={item.a} />)
                 ) : (
                   <p className={styles.description}>No FAQs available for this bouquet yet.</p>
                 )}
@@ -445,7 +483,7 @@ export default function ProductDetailPage() {
         <section className={styles.related}>
           <h2>You May Also Love</h2>
           <div className={styles.relatedGrid}>
-            {related.map((p) => <ProductCard key={p.id} product={p} />)}
+            {related.map((p) => <ProductCard key={p._id || p.id} product={p} />)}
           </div>
         </section>
       </div>

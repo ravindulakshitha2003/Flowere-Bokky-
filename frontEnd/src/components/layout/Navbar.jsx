@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { Heart, ShoppingBag, Menu, X, User, LogOut, Shield } from 'lucide-react'
-import { useAuth } from '../../context/AuthContext'
 import { useCart } from '../../context/CartContext'
 import { useWishlist } from '../../context/WishlistContext'
 import ThemeToggle from '../ui/ThemeToggle'
@@ -14,11 +13,29 @@ const navLinks = [
   { to: '/about', label: 'About' },
 ]
 
+// Decodes a JWT payload on the client, without verifying the signature.
+// Good enough for reading display data (name, role) that's already public
+// once the token is issued — never trust this for authorization checks.
+function decodeToken(token) {
+  try {
+    const payload = token.split('.')[1]
+    const json = atob(payload.replace(/-/g, '+').replace(/_/g, '/'))
+    return JSON.parse(json)
+  } catch (err) {
+    return null
+  }
+}
+
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
-  const { isLoggedIn, isAdmin, user, logout } = useAuth()
+
+  // ---- Auth, read directly from the JWT saved in localStorage ----
+  const [firstName, setFirstName] = useState(null)
+  const [isAdmin, setIsAdmin] = useState(false)
+  const isLoggedIn = !!firstName
+
   const { itemCount } = useCart()
   const { count: wishlistCount } = useWishlist()
   const navigate = useNavigate()
@@ -34,8 +51,25 @@ export default function Navbar() {
     return () => { document.body.style.overflow = '' }
   }, [menuOpen])
 
+  useEffect(() => {
+    const token = localStorage.getItem('token')
+    if (!token) return
+
+    const payload = decodeToken(token)
+    if (!payload) {
+      localStorage.removeItem('token')
+      return
+    }
+
+    const name = payload.name || payload.firstName || payload.username
+    setFirstName(name ? name.split(' ')[0] : 'User')
+    setIsAdmin(payload.role === 'admin')
+  }, [])
+
   const handleLogout = () => {
-    logout()
+    localStorage.removeItem('token')
+    setFirstName(null)
+    setIsAdmin(false)
     setDropdownOpen(false)
     navigate('/', { replace: true })
   }
@@ -81,7 +115,8 @@ export default function Navbar() {
                 onClick={() => setDropdownOpen(!dropdownOpen)}
                 aria-label="Account menu"
               >
-                {user?.name?.charAt(0) || 'U'}
+                <User size={16} />
+                <span className={styles.avatarName}>{firstName}</span>
               </button>
               {dropdownOpen && (
                 <div className={styles.dropdownMenu}>

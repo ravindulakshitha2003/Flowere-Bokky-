@@ -1,14 +1,40 @@
-import { useState, useMemo } from 'react'
-import { Link } from 'react-router-dom'
+// src/pages/CheckoutPage.jsx
+import { useState, useMemo, useEffect } from 'react'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
-import { useAuth } from '../context/AuthContext'
-
-import { formatPrice, generateOrderId, getMinDeliveryDate } from '../utils/helpers'
+import { useToast } from '../context/ToastContext'
+import { formatPrice, getMinDeliveryDate } from '../utils/helpers'
 import styles from './CheckoutPage.module.css'
 
+const API_BASE = 'http://localhost:3000'
 const STEPS = ['Delivery', 'Payment', 'Confirm']
 const SIZE_RANK = { S: 1, M: 2, L: 3 }
 const SIZE_LABELS = { S: 'Small', M: 'Medium', L: 'Large' }
+
+// Local delivery config — replace with a fetch to your API if/when you have
+// a real delivery-zones endpoint. No context/store dependency for now.
+const DELIVERY_ZONE = {
+  id: 'zone-colombo-metro',
+  name: 'Colombo 01-15',
+  priceSmall: 400,
+  priceMedium: 550,
+  priceLarge: 700,
+  // Default center used until a real draggable-pin map is wired up.
+  defaultLat: 6.9271,
+  defaultLng: 79.8612,
+}
+const DELIVERY_SLOTS = [
+  { id: 'slot-morning', label: 'Morning', time: '8AM - 12PM', icon: '🌅', active: true },
+  { id: 'slot-afternoon', label: 'Afternoon', time: '12PM - 4PM', icon: '☀️', active: true },
+  { id: 'slot-eve-02', label: 'Evening Express', time: '16:00 - 19:00', icon: '🌇', active: true },
+]
+const DELIVERY_RULES = {
+  advanceBookingDays: 1,
+  sameDayDelivery: false,
+  blockSundays: true,
+  freeDeliveryThreshold: 15000,
+}
+const GIFT_WRAP_COST = 200
 
 function getLargestCartSize(cartItems) {
   let largest = 'S'
@@ -27,33 +53,57 @@ function getZonePriceForSize(zone, size) {
   return zone.priceSmall ?? zone.price ?? 0
 }
 
+function getStoredUser() {
+  try {
+    return JSON.parse(localStorage.getItem('user') || 'null')
+  } catch {
+    return null
+  }
+}
+
 export default function CheckoutPage() {
   const { items, cartTotal, packingTotal, clearCart } = useCart()
-  const { user } = useAuth()
-  const { deliveryZones, deliverySlots, deliveryRules } = useStore()
+  const { showToast } = useToast()
+  const navigate = useNavigate()
+  const location = useLocation()
+
+  const user = getStoredUser()
+  const promoFromCart = location.state?.promoCode || ''
+  const discountFromCart = location.state?.discount || 0
 
   const activeSlots = useMemo(
-    () => deliverySlots.filter((s) => s.active),
-    [deliverySlots]
+    () => DELIVERY_SLOTS.filter((s) => s.active),
+    []
   )
 
   const minDeliveryDate = useMemo(() => {
-    const advance = deliveryRules.advanceBookingDays > 0
-      ? deliveryRules.advanceBookingDays
+    const advance = DELIVERY_RULES.advanceBookingDays > 0
+      ? DELIVERY_RULES.advanceBookingDays
       : 0
-    const base = deliveryRules.sameDayDelivery ? Math.max(0, advance - 1) : advance
+    const base = DELIVERY_RULES.sameDayDelivery ? Math.max(0, advance - 1) : advance
     return getMinDeliveryDate(base)
-  }, [deliveryRules])
+  }, [])
+
+  // Redirect guard: token must exist to be here at all (ProtectedRoute
+  // already checks this, but this covers direct state loss / stale cart)
+  useEffect(() => {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      showToast('Please log in to place an order 🌸', 'info')
+      navigate('/login', { state: { from: '/checkout' }, replace: true })
+    }
+  }, [navigate, showToast])
 
   const [step, setStep] = useState(0)
-  const [orderId, setOrderId] = useState('')
-  const [orderSnapshot, setOrderSnapshot] = useState(null)
+  const [placing, setPlacing] = useState(false)
+  const [confirmedOrder, setConfirmedOrder] = useState(null) // full order object returned by the server
+  const [pinLocation, setPinLocation] = useState(null) // { lat, lng } once the user places the pin
   const [form, setForm] = useState({
     name: user?.name || '',
     phone: user?.phone || '',
     email: user?.email || '',
     address: '',
-    slot: 'morning',
+    slot: 'slot-eve-02',
     date: '',
     giftWrapping: false,
     paymentMethod: 'card',
@@ -63,25 +113,22 @@ export default function CheckoutPage() {
     pinPlaced: false,
   })
 
-  const selectedZone = useMemo(
-    () => deliveryZones.find((z) => z.active) || deliveryZones[0],
-    [deliveryZones]
-  )
-
+  const selectedZone = DELIVERY_ZONE
   const largestSize = useMemo(() => getLargestCartSize(items), [items])
 
   const subtotal = cartTotal + packingTotal
-  const baseShipping = form.pinPlaced && selectedZone
+  const baseShipping = form.pinPlaced
     ? getZonePriceForSize(selectedZone, largestSize)
     : 0
   const shippingCost = (
-    deliveryRules.freeDeliveryThreshold > 0
-    && subtotal >= deliveryRules.freeDeliveryThreshold
+    DELIVERY_RULES.freeDeliveryThreshold > 0
+    && subtotal >= DELIVERY_RULES.freeDeliveryThreshold
   ) ? 0 : baseShipping
-  const total = subtotal + shippingCost
+  const giftWrappingCost = form.giftWrapping ? GIFT_WRAP_COST : 0
+  const total = Math.max(0, subtotal + shippingCost + giftWrappingCost - discountFromCart)
 
   const updateForm = (key, value) => {
-    if (key === 'date' && deliveryRules.blockSundays && value) {
+    if (key === 'date' && DELIVERY_RULES.blockSundays && value) {
       const day = new Date(`${value}T12:00:00`).getDay()
       if (day === 0) return
     }
@@ -91,19 +138,144 @@ export default function CheckoutPage() {
   const effectiveDate = form.date || minDeliveryDate
   const selectedSlot = activeSlots.find((s) => s.id === form.slot)
 
+  const addonsTotalAll = items.reduce(
+    (sum, i) => sum + (i.addons || []).reduce((s, a) => s + (a.price || 0), 0) * i.quantity,
+    0
+  )
+
+  // NOTE: orderId, payment.status and payment.transactionId are intentionally
+  // NOT sent — the server is the source of truth for all three. Sending them
+  // from the client would let anyone forge a "paid" order.
+  function buildOrderPayload() {
+    return {
+      customer: {
+        userId: user?.id ?? user?._id ?? null,
+        name: form.name,
+        phone: form.phone,
+        email: form.email,
+      },
+      items: items.map((it) => {
+        const unitPrice = it.price ?? it.basePrice ?? 0
+        const addons = (it.addons || []).map((a) => ({
+          addonId: a.addonId ?? a.id,
+          name: a.name,
+          price: a.price,
+          category: a.category ?? null,
+        }))
+        const addonsSum = addons.reduce((s, a) => s + a.price, 0)
+        return {
+          productId: it.productId,
+          name: it.name,
+          type: it.type ?? null,
+          image: it.image ?? null,
+          size: it.size,
+          sizeLabel: it.sizeLabel,
+          flowers: it.flowers ?? null,
+          unitPrice,
+          originalPrice: it.originalPrice ?? unitPrice,
+          isOffer: !!it.isOffer,
+          offerDiscount: it.offerDiscount ?? 0,
+          packingCost: it.packingCost ?? 0,
+          packingMaterial: it.packingMaterial ?? null,
+          quality: it.quality ?? null,
+          weight: it.weight ?? null,
+          colors: it.colors ?? [],
+          flowerList: it.flowerList ?? [],
+          wrapping: it.wrapping,
+          surpriseMe: !!it.surpriseMe,
+          addons,
+          addonsTotal: addonsSum * it.quantity,
+          giftMessage: it.giftMessage ?? '',
+          quantity: it.quantity,
+          lineTotal: (unitPrice + (it.packingCost || 0) + addonsSum) * it.quantity,
+        }
+      }),
+      delivery: {
+        address: form.address,
+        location: pinLocation ?? {
+          lat: selectedZone.defaultLat,
+          lng: selectedZone.defaultLng,
+        },
+        zoneId: selectedZone.id,
+        zoneName: selectedZone.name,
+        slotId: form.slot,
+        slotLabel: selectedSlot?.label ?? null,
+        slotTime: selectedSlot?.time ?? null,
+        date: effectiveDate,
+        giftWrapping: form.giftWrapping,
+        giftWrappingCost,
+      },
+      payment: {
+        method: form.paymentMethod,
+        cardLast4: form.paymentMethod === 'card'
+          ? form.cardNumber.replace(/\s/g, '').slice(-4)
+          : null,
+      },
+      pricing: {
+        subtotal: cartTotal,
+        packingTotal,
+        addonsTotal: addonsTotalAll,
+        giftWrappingCost,
+        shippingCost,
+        discount: discountFromCart,
+        promoCode: promoFromCart || null,
+        total,
+        currency: 'LKR',
+      },
+    }
+  }
+
   const handlePlaceOrder = async () => {
-    await new Promise((r) => setTimeout(r, 1200))
-    const id = generateOrderId()
-    setOrderSnapshot({
-      items: [...items],
-      cartTotal,
-      packingTotal,
-      shippingCost,
-      total,
-    })
-    setOrderId(id)
-    clearCart()
-    setStep(2)
+    const token = localStorage.getItem('token')
+    if (!token) {
+      navigate('/login', { state: { from: '/checkout' } })
+      return
+    }
+
+    const payload = buildOrderPayload()
+
+    try {
+      setPlacing(true)
+      const res = await fetch(`http://localhost:3000/api/orders`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      })
+
+      if (res.status === 401) {
+        localStorage.removeItem('token')
+        localStorage.removeItem('user')
+        showToast('Session expired, please log in again', 'error')
+        navigate('/login', { state: { from: '/checkout' } })
+        return
+      }
+
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        throw new Error(data.message || `Order failed (${res.status})`)
+      }
+
+      if (!data.order) {
+        throw new Error('Order response was missing expected data')
+      }
+
+      // Store exactly what the server saved — this is what the confirmation
+      // screen renders, so it can never drift from the database record.
+      setConfirmedOrder(data.order)
+      clearCart()
+      setStep(2)
+    } catch (err) {
+      if (err instanceof TypeError) {
+        showToast('Cannot reach the server. Is the backend running?', 'error')
+      } else {
+        showToast(err.message || 'Could not place your order', 'error')
+      }
+    } finally {
+      setPlacing(false)
+    }
   }
 
   if (items.length === 0 && step < 2) {
@@ -167,20 +339,28 @@ export default function CheckoutPage() {
               <p className={styles.mapLabel}>Drag pin to your exact door/gate</p>
               <button
                 className={styles.pinBtn}
-                onClick={() => updateForm('pinPlaced', true)}
+                onClick={() => {
+                  // NOTE: this iframe embed can't report a dragged pin's
+                  // coordinates back to React (iframes are sandboxed). Until
+                  // this is swapped for the Google Maps JS API with a
+                  // draggable marker + onDragEnd handler, we fall back to the
+                  // zone's default coordinates in buildOrderPayload().
+                  setPinLocation({ lat: selectedZone.defaultLat, lng: selectedZone.defaultLng })
+                  updateForm('pinPlaced', true)
+                }}
               >
                 {form.pinPlaced ? '✓ Pin Placed' : 'Place Delivery Pin'}
               </button>
             </div>
 
-            {form.pinPlaced && selectedZone && (
+            {form.pinPlaced && (
               <p className={styles.zoneLabel}>
                 {selectedZone.name} — {SIZE_LABELS[largestSize]} bouquet — {formatPrice(shippingCost)} delivery fee
-                {deliveryRules.freeDeliveryThreshold > 0 && subtotal >= deliveryRules.freeDeliveryThreshold && ' (free delivery applied)'}
+                {DELIVERY_RULES.freeDeliveryThreshold > 0 && subtotal >= DELIVERY_RULES.freeDeliveryThreshold && ' (free delivery applied)'}
               </p>
             )}
 
-            {deliveryRules.sameDayDelivery && (
+            {DELIVERY_RULES.sameDayDelivery && (
               <p className={styles.zoneLabel}>Same-day delivery available for qualifying orders</p>
             )}
 
@@ -209,7 +389,7 @@ export default function CheckoutPage() {
                 min={minDeliveryDate}
                 onChange={(e) => updateForm('date', e.target.value)}
               />
-              {deliveryRules.blockSundays && (
+              {DELIVERY_RULES.blockSundays && (
                 <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Sundays are not available for delivery</span>
               )}
             </div>
@@ -221,13 +401,13 @@ export default function CheckoutPage() {
                 onChange={(e) => updateForm('giftWrapping', e.target.checked)}
               />
               <span className={styles.toggleSlider} />
-              Premium gift wrapping (+LKR 200)
+              Premium gift wrapping (+LKR {GIFT_WRAP_COST})
             </label>
 
             <button
               className="btn-primary"
               onClick={() => setStep(1)}
-              disabled={!form.name || !form.phone || !form.address}
+              disabled={!form.name || !form.phone || !form.address || !form.pinPlaced}
             >
               Continue to Payment
             </button>
@@ -290,21 +470,29 @@ export default function CheckoutPage() {
 
             <div className={styles.orderPreview}>
               <h3>Order Total: {formatPrice(total)}</h3>
-              {form.pinPlaced && selectedZone && (
+              {form.pinPlaced && (
                 <p className={styles.zoneLabel}>
                   Shipping ({SIZE_LABELS[largestSize]}): {formatPrice(shippingCost)}
                 </p>
               )}
+              {discountFromCart > 0 && (
+                <p className={styles.zoneLabel}>Discount ({promoFromCart}): -{formatPrice(discountFromCart)}</p>
+              )}
             </div>
 
-            <button className={`btn-primary ${styles.placeOrder}`} onClick={handlePlaceOrder}>
-              Place Order
+            <button
+              className={`btn-primary ${styles.placeOrder}`}
+              onClick={handlePlaceOrder}
+              disabled={placing}
+            >
+              {placing ? 'Placing order…' : 'Place Order'}
             </button>
           </div>
         )}
 
-        {/* Step 3: Confirmation */}
-        {step === 2 && (
+        {/* Step 3: Confirmation — everything here reads from confirmedOrder,
+            i.e. exactly what the server persisted, never local form state. */}
+        {step === 2 && confirmedOrder && (
           <div className={styles.confirmation}>
             <div className={styles.successIcon}>
               <svg viewBox="0 0 52 52" className={styles.checkmark}>
@@ -314,36 +502,48 @@ export default function CheckoutPage() {
             </div>
             <h2>Order Confirmed!</h2>
             <p className={styles.orderIdLabel}>Order ID</p>
-            <p className={styles.orderId}>{orderId}</p>
+            <p className={styles.orderId}>{confirmedOrder.orderId}</p>
 
             <div className={styles.confirmSummary}>
               <h3>Order Summary</h3>
-              {orderSnapshot?.items?.length > 0 && (
+              {confirmedOrder.items?.length > 0 && (
                 <div className={styles.confirmItems}>
-                  {orderSnapshot.items.map((item) => (
-                    <div key={item.cartId} className={styles.confirmItem}>
+                  {confirmedOrder.items.map((item, i) => (
+                    <div key={i} className={styles.confirmItem}>
                       <span>{item.name} ({item.size}) × {item.quantity}</span>
                     </div>
                   ))}
                 </div>
               )}
               <div className={styles.summaryGrid}>
-                <div><span>Delivery Address</span><strong>{form.address}</strong></div>
-                <div><span>Delivery Slot</span><strong>{selectedSlot?.label} ({selectedSlot?.time})</strong></div>
-                <div><span>Delivery Date</span><strong>{effectiveDate}</strong></div>
-                <div><span>Packing Cost</span><strong>{formatPrice(orderSnapshot?.packingTotal ?? packingTotal)}</strong></div>
-                <div><span>Shipping</span><strong>{formatPrice(orderSnapshot?.shippingCost ?? shippingCost)}</strong></div>
-                <div><span>Payment</span><strong>{form.paymentMethod === 'card' ? 'Card' : 'Cash on Delivery'}</strong></div>
-                <div className={styles.totalRow}><span>Total</span><strong>{formatPrice(orderSnapshot?.total ?? total)}</strong></div>
+                <div><span>Delivery Address</span><strong>{confirmedOrder.delivery?.address}</strong></div>
+                <div><span>Delivery Slot</span><strong>{confirmedOrder.delivery?.slotLabel} ({confirmedOrder.delivery?.slotTime})</strong></div>
+                <div><span>Delivery Date</span><strong>{confirmedOrder.delivery?.date}</strong></div>
+                <div><span>Packing Cost</span><strong>{formatPrice(confirmedOrder.pricing?.packingTotal)}</strong></div>
+                <div><span>Shipping</span><strong>{formatPrice(confirmedOrder.pricing?.shippingCost)}</strong></div>
+                <div><span>Gift Wrapping</span><strong>{formatPrice(confirmedOrder.pricing?.giftWrappingCost)}</strong></div>
+                <div>
+                  <span>Payment</span>
+                  <strong>
+                    {confirmedOrder.payment?.method === 'card' ? 'Card' : 'Cash on Delivery'}
+                    {confirmedOrder.payment?.method === 'card' && confirmedOrder.payment?.cardLast4
+                      ? ` •••• ${confirmedOrder.payment.cardLast4}`
+                      : ''}
+                    {' — '}
+                    {confirmedOrder.payment?.status}
+                  </strong>
+                </div>
+                <div><span>Order Status</span><strong>{confirmedOrder.status}</strong></div>
+                <div className={styles.totalRow}><span>Total</span><strong>{formatPrice(confirmedOrder.pricing?.total)}</strong></div>
               </div>
             </div>
 
             <p className={styles.trackingLink}>
-              Track your order: <Link to={`/track/${orderId}`}>bloomandbliss.lk/track/{orderId}</Link>
+              Track your order: <Link to={`/track/${confirmedOrder.orderId}`}>bloomandbliss.lk/track/{confirmedOrder.orderId}</Link>
             </p>
 
             <div className={styles.confirmActions}>
-              <Link to={`/track/${orderId}`} className="btn-primary">Track Your Order</Link>
+              <Link to={`/track/${confirmedOrder.orderId}`} className="btn-primary">Track Your Order</Link>
               <Link to="/shop" className="btn-outline">Continue Shopping</Link>
             </div>
           </div>

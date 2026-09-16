@@ -309,3 +309,10 @@
 .mobileLogout:hover {
   background: var(--petal);
 }
+
+.avatarName {
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+ 

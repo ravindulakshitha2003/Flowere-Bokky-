@@ -1,9 +1,12 @@
+// src/pages/LoginPage.jsx
 import { useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import { useToast } from '../context/ToastContext'
 import { validateEmail } from '../utils/helpers'
 import styles from './AuthPages.module.css'
+
+const API_BASE = 'http://localhost:3000'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -33,8 +36,9 @@ export default function LoginPage() {
     if (!validate()) return
 
     setLoading(true)
+    setErrors({})
     try {
-      const res = await fetch('http://localhost:3000/api/auth/login', {
+      const res = await fetch(`${API_BASE}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -46,14 +50,19 @@ export default function LoginPage() {
         throw new Error(data.message || 'Login failed. Please try again.')
       }
 
-      // No JWT yet — persist the logged-in user so the app knows who's signed in
-      // across refreshes. Swap this for a token once the backend issues one.
+      // Single source of truth: plain 'token' / 'user' keys.
+      // ProtectedRoute must read these same keys (see note below).
+      localStorage.setItem('token', data.token)
       localStorage.setItem('user', JSON.stringify(data.user))
 
       showToast('Welcome back! 🌸', 'success')
       navigate(from, { replace: true })
     } catch (err) {
-      setErrors({ form: err.message })
+      if (err instanceof TypeError) {
+        setErrors({ form: 'Cannot reach the server. Is the backend running on port 3000?' })
+      } else {
+        setErrors({ form: err.message })
+      }
     } finally {
       setLoading(false)
     }
@@ -84,6 +93,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@email.lk"
+                autoComplete="email"
               />
               {errors.email && <span className={styles.fieldError}>{errors.email}</span>}
             </div>
@@ -96,6 +106,7 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
+                  autoComplete="current-password"
                 />
                 <button
                   type="button"
